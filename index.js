@@ -1,9 +1,9 @@
 
 /**
  * Least Recently Used Cache. Use a map and a double linked list to store key-value pair.
- * 
+ *
  * @param {number} capacity -- max capacity of cache
- * 
+ *
  */
 /*
  * <br/> key-value pair is stored as following type of object:
@@ -14,10 +14,12 @@
  * <br/>    next: <node>, // Next node in the linked list
  * <br/> }
  */
-function LruCache(capacity) {
+function LruCache(capacity, autoDestructor) {
 
   // max size of cache
-  this._capacity = typeof capacity == 'number' ? capacity : 100;
+  this._capacity = typeof capacity == 'number' ? capacity : 1024;
+
+  this.autoDestructor = typeof autoDestructor == 'string' ? autoDestructor : "destory";
 
   // head of linked list, when set or get, the node will be inserted to head
   this._head = null;
@@ -41,7 +43,7 @@ function Node(key, value, prev, next) {
 
 /**
  * Removes all of the elements from the cache.
- * 
+ *
  */
 LruCache.prototype.clear = function () {
   this._cache = {};
@@ -50,12 +52,15 @@ LruCache.prototype.clear = function () {
   this._size = 0;
 };
 
+
+
+
 /**
  * Returns the value to which the specified key is mapped, or 'undefined' if cache contains no mapping for the key.
- * 
+ *
  * @param {any} key  -- key of value
  * @return cache value mapped with this key
- * 
+ *
  */
 LruCache.prototype.get = function (key) {
   if (this.has(key)) {
@@ -70,10 +75,10 @@ LruCache.prototype.get = function (key) {
 
 /**
  * Check if the cache contains the value of specified key
- * 
+ *
  * @param {any} key
  * @return true or false
- * 
+ *
  */
 LruCache.prototype.has = function (key) {
   return this._cache.hasOwnProperty(key);
@@ -81,26 +86,30 @@ LruCache.prototype.has = function (key) {
 
 /**
  * Remove value of specified key from the cache
- * 
+ *
  * @param {any} key
+ * @param {bool} isSkipChecking to skip checking if the key item exist or not.
  * @return value of this key if successfully removed
- * 
+ *
  */
-LruCache.prototype.remove = function (key) {
-  if (this.has(key)) {
-    var node = this._cache[key];
+LruCache.prototype.remove = function (key, isSkipChecking) {
+  var node;
+  if (isSkipChecking || this.has(key)) {
+    node = this._cache[key];
     this._unlink(node);
     delete this._cache[key];
-    return node.value;
+    //return node.value;
   }
+  this._doAutoCleanUp(node.value);
+  return node.value;
 };
 
 /**
  * Add an value with specified key into cache. If it exists, the value will be updated.
- * 
+ *
  * @param {any} key  -- key of value
  * @param {any} value
- * 
+ *
  */
 LruCache.prototype.set = function (key, value) {
   if (this._capacity <= 0) {
@@ -115,8 +124,10 @@ LruCache.prototype.set = function (key, value) {
     node.value = value;
   } else {
     if (this._size + 1 > this._capacity) {
-      delete this._cache[this._tail.key];
-      this._unlink(this._tail);
+      // auto destory mode;
+      this.remove(this._tail.key, true);
+      // delete this._cache[this._tail.key];
+      // this._unlink(this._tail);
     } else {
       this._size++;
     }
@@ -125,15 +136,15 @@ LruCache.prototype.set = function (key, value) {
   }
 
   this._insertHead(node);
-  
+
   return node.value;
 };
 
 /**
  * Returns the number of elements in cache.
- * 
+ *
  * @return Returns the number of elements in cache.
- * 
+ *
  */
 LruCache.prototype.size = function () {
   return this._size;
@@ -141,9 +152,9 @@ LruCache.prototype.size = function () {
 
 /**
  * Returns the  Returns an array of the key-value pairs in cache.
- * 
+ *
  * @return Returns the  Returns an array of the key-value pairs in cache.
- * 
+ *
  */
 LruCache.prototype.values = function () {
   var nodes = [];
@@ -156,10 +167,18 @@ LruCache.prototype.values = function () {
     });
     node = node.next;
   }
-  
+
   return nodes;
 };
 
+// call Object destructor, if auto-destructor is set
+LruCache.prototype._doAutoCleanUp = function (value) {
+  if (!this.autoDestructor) return;
+  if (!value) return;
+  if (!value[this.autoDestructor]) return;
+  if ("function" !== typeof value[this.autoDestructor]) return;
+  value[this.autoDestructor].call(value);
+}
 
 // Remove a node from linked list, not removed from cache map
 LruCache.prototype._unlink = function (node) {
