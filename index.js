@@ -113,7 +113,7 @@ LruCache.prototype.remove = function (key, isSkipChecking) {
  */
 LruCache.prototype.set = function (key, value) {
   if (this._capacity <= 0) {
-    return;
+    return this;
   }
 
   var node;
@@ -137,7 +137,7 @@ LruCache.prototype.set = function (key, value) {
 
   this._insertHead(node);
 
-  return node.value;
+  return this;
 };
 
 /**
