@@ -1,3 +1,5 @@
+var setImmediate2 = require('setimmediate2');
+var setImmediate = setImmediate2.setImmediate;
 
 /**
  * Least Recently Used Cache. Use a map and a double linked list to store key-value pair.
@@ -19,7 +21,7 @@ function LruCache(capacity, autoDestructor) {
   // max size of cache
   this._capacity = typeof capacity == 'number' ? capacity : 1024;
 
-  this.autoDestructor = typeof autoDestructor == 'string' ? autoDestructor : "destory";
+  //this.autoDestructor = typeof autoDestructor == 'string' ? autoDestructor : "destory";
 
   // head of linked list, when set or get, the node will be inserted to head
   this._head = null;
@@ -32,6 +34,11 @@ function LruCache(capacity, autoDestructor) {
 
   // map of cache, used to check and get an value in O(1)
   this._cache = {};
+
+  this._destoryQueueHead = null;
+  this._destoryQueueTail = null;
+  this._popAndDestory = this.prototype._popAndDestory.bind(this);
+  this._popAndDestoryAsyncAction = this.prototype._popAndDestoryAsyncAction.bind(this);
 }
 
 function Node(key, value, prev, next) {
@@ -42,17 +49,16 @@ function Node(key, value, prev, next) {
 }
 
 /**
- * Removes all of the elements from the cache.
+ * stub. Will not do anything. it is a self maintained
  *
  */
 LruCache.prototype.clear = function () {
-  this._cache = {};
+  this._queueForDestory();
   this._head = null;
   this._tail = null;
   this._size = 0;
+  this._cache = {};
 };
-
-
 
 
 /**
@@ -207,6 +213,31 @@ LruCache.prototype._insertHead = function (node) {
   if (this._tail == null) {
     this._tail = node;
   }
+};
+
+LruCache.prototype._queueForDestory = function () {
+  if (autoDestructor === undefined) return;
+  if (this._destoryQueueHead){
+    this._destoryQueueTail.next = this._head;
+  } else {
+    this._destoryQueueHead = this._head;
+  }
+  this._destoryQueueTail = this._tail;
+  this._popAndDestory();
+};
+
+LruCache.prototype._popAndDestory = function () {
+  setImmediate(this._popAndDestoryAsyncAction);
+};
+
+LruCache.prototype._popAndDestoryAsyncAction = function () {
+  var currNode = this._destoryQueueHead;
+  if (! currNode) return;
+  this._doAutoCleanUp(currNode.value);
+  this._destoryQueueHead = node.next;
+  node.next = null;
+  node.prev = null;
+  setImmediate(this._popAndDestoryAsyncAction);
 };
 
 // Export interfaces
