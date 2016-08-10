@@ -16,6 +16,21 @@ var setImmediate = setImmediate2.setImmediate;
  * <br/>    next: <node>, // Next node in the linked list
  * <br/> }
  */
+
+ function _popAndDestory() {
+   setImmediate(this._popAndDestoryAsyncAction);
+ }
+
+ function _popAndDestoryAsyncAction() {
+   var currNode = this._destoryQueueHead;
+   if (! currNode) return;
+   this._doAutoCleanUp(currNode.value);
+   this._destoryQueueHead = node.next;
+   node.next = null;
+   node.prev = null;
+   setImmediate(this._popAndDestoryAsyncAction);
+ }
+
 function LruCache(capacity, autoDestructor) {
 
   // max size of cache
@@ -37,8 +52,8 @@ function LruCache(capacity, autoDestructor) {
 
   this._destoryQueueHead = null;
   this._destoryQueueTail = null;
-  this._popAndDestory = this.prototype._popAndDestory.bind(this);
-  this._popAndDestoryAsyncAction = this.prototype._popAndDestoryAsyncAction.bind(this);
+  this._popAndDestory = _popAndDestory.bind(this);
+  this._popAndDestoryAsyncAction = _popAndDestoryAsyncAction.bind(this);
 }
 
 function Node(key, value, prev, next) {
@@ -226,19 +241,6 @@ LruCache.prototype._queueForDestory = function () {
   this._popAndDestory();
 };
 
-LruCache.prototype._popAndDestory = function () {
-  setImmediate(this._popAndDestoryAsyncAction);
-};
-
-LruCache.prototype._popAndDestoryAsyncAction = function () {
-  var currNode = this._destoryQueueHead;
-  if (! currNode) return;
-  this._doAutoCleanUp(currNode.value);
-  this._destoryQueueHead = node.next;
-  node.next = null;
-  node.prev = null;
-  setImmediate(this._popAndDestoryAsyncAction);
-};
 
 // Export interfaces
 if (typeof module != 'undefined') {
