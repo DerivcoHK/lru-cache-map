@@ -37,6 +37,7 @@ function LruCache(capacity, autoDestructor) {
   this._capacity = typeof capacity == 'number' ? capacity : 1024;
 
   //this.autoDestructor = typeof autoDestructor == 'string' ? autoDestructor : "destory";
+  this.autoDestructor = typeof autoDestructor == 'string' ? autoDestructor : undefined;
 
   // head of linked list, when set or get, the node will be inserted to head
   this._head = null;
