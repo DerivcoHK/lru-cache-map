@@ -1,3 +1,4 @@
+var _ = require('lodash-src')
 var setImmediate2 = require('setimmediate2');
 var setImmediate = setImmediate2.setImmediate;
 
@@ -23,11 +24,11 @@ var setImmediate = setImmediate2.setImmediate;
 
  function _popAndDestoryAsyncAction() {
    var currNode = this._destoryQueueHead;
-   if (! currNode) return;
+   if (!currNode) return;
    this._doAutoCleanUp(currNode.value);
-   this._destoryQueueHead = node.next;
-   node.next = null;
-   node.prev = null;
+   this._destoryQueueHead = currNode.next;
+   currNode.next = null;
+   currNode.prev = null;
    setImmediate(this._popAndDestoryAsyncAction);
  }
 
@@ -106,6 +107,16 @@ LruCache.prototype.has = function (key) {
   return this._cache.hasOwnProperty(key);
 };
 
+
+
+/**
+ * get arrays Keys
+ * @return {array}
+ *
+ */
+LruCache.prototype.getKeys = function () {
+
+};
 /**
  * Remove value of specified key from the cache
  *
