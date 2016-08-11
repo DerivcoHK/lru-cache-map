@@ -25,18 +25,18 @@ var CLEANUP_DELAY_MS = 100;
    this.cleanUpTimer = setTimeout(this._popAndDestoryAsyncAction, CLEANUP_DELAY_MS);
  }
 
- function _popAndDestoryAsyncAction() {
-   var currNode = this._destoryQueueHead;
-   if (!currNode) return;
-   this._doAutoCleanUp(currNode.value);
-   this._destoryQueueHead = currNode.next;
-   currNode.next = null;
-   currNode.prev = null;
+  function _popAndDestoryAsyncAction() {
+    var currNode = this._destoryQueueHead;
+    if (!currNode) return;
+    this._doAutoCleanUp(currNode.value);
+    this._destoryQueueHead = currNode.next;
+    currNode.next = null;
+    currNode.prev = null;
     if (!this.cleanUpTimer) {
       setImmediate(this._popAndDestoryAsyncAction);
+      this.cleanUpTimer = null;
     }
-    this.cleanUpTimer = null;
- }
+  }
 
 function LruCache(capacity, autoDestructor) {
 
