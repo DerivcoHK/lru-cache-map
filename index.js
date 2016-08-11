@@ -2,6 +2,8 @@ var _ = require('lodash-src')
 var setImmediate2 = require('setimmediate2');
 var setImmediate = setImmediate2.setImmediate;
 
+
+var CLEANUP_DELAY_MS = 100;
 /**
  * Least Recently Used Cache. Use a map and a double linked list to store key-value pair.
  *
@@ -19,7 +21,8 @@ var setImmediate = setImmediate2.setImmediate;
  */
 
  function _popAndDestory() {
-   setImmediate(this._popAndDestoryAsyncAction);
+   if (this.cleanUpTimer) { clearTimeout(this.cleanUpTimer); }
+   this.cleanUpTimer = setTimeout(this._popAndDestoryAsyncAction, CLEANUP_DELAY_MS);
  }
 
  function _popAndDestoryAsyncAction() {
@@ -29,7 +32,10 @@ var setImmediate = setImmediate2.setImmediate;
    this._destoryQueueHead = currNode.next;
    currNode.next = null;
    currNode.prev = null;
-   setImmediate(this._popAndDestoryAsyncAction);
+    if (!this.cleanUpTimer) {
+      setImmediate(this._popAndDestoryAsyncAction);
+    }
+    this.cleanUpTimer = null;
  }
 
 function LruCache(capacity, autoDestructor) {
@@ -56,6 +62,7 @@ function LruCache(capacity, autoDestructor) {
   this._destoryQueueTail = null;
   this._popAndDestory = _popAndDestory.bind(this);
   this._popAndDestoryAsyncAction = _popAndDestoryAsyncAction.bind(this);
+  this.cleanUpTimer =null;
 }
 
 function Node(key, value, prev, next) {
@@ -115,7 +122,7 @@ LruCache.prototype.has = function (key) {
  *
  */
 LruCache.prototype.getKeys = function () {
-
+  return _.keys(this.cache);
 };
 /**
  * Remove value of specified key from the cache
@@ -133,7 +140,7 @@ LruCache.prototype.remove = function (key, isSkipChecking) {
     delete this._cache[key];
     //return node.value;
   }
-  this._doAutoCleanUp(node.value);
+  this._queueNodeForDestory(node.value);
   return node.value;
 };
 
@@ -210,7 +217,7 @@ LruCache.prototype._doAutoCleanUp = function (value) {
   if (!value) return;
   if (!value[this.autoDestructor]) return;
   if ("function" !== typeof value[this.autoDestructor]) return;
-  value[this.autoDestructor].call(value);
+  setImmediate(value[this.autoDestructor].bind(value));
 }
 
 // Remove a node from linked list, not removed from cache map
@@ -251,6 +258,19 @@ LruCache.prototype._queueForDestory = function () {
     this._destoryQueueHead = this._head;
   }
   this._destoryQueueTail = this._tail;
+  this._popAndDestory();
+};
+
+LruCache.prototype._queueNodeForDestory = function (node) {
+  if (this.autoDestructor === undefined) return;
+  if (this._destoryQueueTail){
+    this._destoryQueueTail.next = node;
+    this._destoryQueueTail = node;
+  } else{
+    this._destoryQueueHead = node;
+    this._destoryQueueTail = node;
+  }
+
   this._popAndDestory();
 };
 
