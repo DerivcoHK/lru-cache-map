@@ -243,6 +243,7 @@ LruCache.prototype._insertHead = function (node) {
 };
 
 LruCache.prototype._queueForDestory = function () {
+  if (this._size === 0) return;
   if (this.autoDestructor === undefined) return;
   if (this._destoryQueueHead){
     this._destoryQueueTail.next = this._head;
