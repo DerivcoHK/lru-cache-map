@@ -31,7 +31,8 @@ function _popAndDestory() {
   this._ts = _now();
 }
 //polyfill
-var _now = ( windows.performance && windows.performance.now ) ? windows.performance.now.bind( windows.performance ) : Date.now;
+var performance = window.performance;
+var _now = ( performance && performance.now ) ? performance.now.bind( performance ) : Date.now;
 
 function _split() {
   return _now() - this._ts;
