@@ -122,7 +122,7 @@ LruCache.prototype.get = function ( key ) {
  *
  */
 LruCache.prototype.has = function ( key ) {
-  return this._cache.hasOwnProperty( key );
+  return this._cache[key];
 };
 
 /**
@@ -143,12 +143,13 @@ LruCache.prototype.getKeys = function () {
  */
 LruCache.prototype.remove = function ( key, isSkipChecking ) {
   var node;
-  if ( isSkipChecking || this.has( key ) ) {
+  //if ( isSkipChecking || this.has( key ) ) {
     node = this._cache[ key ];
+    if (!node) return null;
     this._unlink( node );
     delete this._cache[ key ];
     //return node.value;
-  }
+  //}
   this._queueNodeForDestory( node.value );
   return node.value;
 };
