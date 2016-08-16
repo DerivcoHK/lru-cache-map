@@ -2,6 +2,7 @@ var _ = require( 'lodash-src' )
 var setImmediate2 = require( 'setimmediate2' );
 var setImmediate = setImmediate2.setImmediate;
 
+//yeild main thread for more important task.
 var CLEANUP_DELAY_MS = 400;
 var TIMER_INGORE_RESET_THERSHOLD_RATIO = 0.75;
 var TIMER_INGORE_RESET_THERSHOLD = CLEANUP_DELAY_MS * TIMER_INGORE_RESET_THERSHOLD_RATIO;
@@ -30,7 +31,7 @@ function _popAndDestory() {
   this._ts = _now();
 }
 //polyfill
-var _now = ( performance && performance.now ) ? performance.now.bind( performance ) : Date.now;
+var _now = ( windows.performance && windows.performance.now ) ? windows.performance.now.bind( windows.performance ) : Date.now;
 
 function _split() {
   return _now() - this._ts;
@@ -162,14 +163,9 @@ LruCache.prototype.remove = function ( key, isSkipChecking ) {
  *
  */
 LruCache.prototype.set = function ( key, value ) {
-  if ( this._capacity <= 0 ) {
-    return this;
-  }
-
-  var node;
-
-  if ( this.has( key ) ) {
-    node = this._cache[ key ];
+  if ( this._capacity <= 0 ) { return this; }
+  var node = this._cache[ key ];
+  if ( node ) {
     this._unlink( node );
     node.value = value;
   } else {
@@ -184,9 +180,7 @@ LruCache.prototype.set = function ( key, value ) {
     node = new Node( key, value, null, null );
     this._cache[ key ] = node;
   }
-
   this._insertHead( node );
-
   return this;
 };
 
