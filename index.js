@@ -1,5 +1,5 @@
-var _ = require( 'lodash-src' )
-var setImmediate2 = require( 'setimmediate2' );
+var _ = require('lodash-src')
+var setImmediate2 = require('setimmediate2');
 var setImmediate = setImmediate2.setImmediate;
 
 //yeild main thread for more important task.
@@ -22,17 +22,9 @@ var TIMER_INGORE_RESET_THERSHOLD = CLEANUP_DELAY_MS * TIMER_INGORE_RESET_THERSHO
  * <br/> }
  */
 
-function _popAndDestory() {
-  if ( this.cleanUpTimer ) {
-    if (_split() > TIMER_INGORE_RESET_THERSHOLD) return;
-    clearTimeout( this.cleanUpTimer );
-  }
-  this.cleanUpTimer = setTimeout( this._popAndDestoryAsyncAction, CLEANUP_DELAY_MS );
-  this._ts = _now();
-}
 //polyfill
 var performance = window.performance;
-var _now = ( performance && performance.now ) ? performance.now.bind( performance ) : Date.now;
+var _now = (performance && performance.now) ? performance.now.bind(performance) : Date.now;
 
 function _split() {
   return _now() - this._ts;
@@ -40,19 +32,28 @@ function _split() {
 
 function _popAndDestoryAsyncAction() {
   var currNode = this._destoryQueueHead;
-  if ( !currNode ) return;
-  this._doAutoCleanUp( currNode.value );
+  if (!currNode) return;
+  this._doAutoCleanUp(currNode.value);
   this._destoryQueueHead = currNode.next;
   currNode.next = null;
   currNode.prev = null;
-  if ( !this.cleanUpTimer ) {
-    setImmediate( this._popAndDestoryAsyncAction );
+  if (!this.cleanUpTimer) {
+    setImmediate(this._popAndDestoryAsyncAction);
     this.cleanUpTimer = null;
   }
 
 }
 
-function LruCache( capacity, autoDestructor ) {
+function _popAndDestory() {
+  if (this.cleanUpTimer) {
+    if (this._split() > TIMER_INGORE_RESET_THERSHOLD) return;
+    clearTimeout(this.cleanUpTimer);
+  }
+  this.cleanUpTimer = setTimeout(this._popAndDestoryAsyncAction, CLEANUP_DELAY_MS);
+  this._ts = _now();
+}
+
+function LruCache(capacity, autoDestructor) {
   this._ts = 0
     // max size of cache
   this._capacity = typeof capacity == 'number' ? capacity : 1024;
@@ -74,12 +75,13 @@ function LruCache( capacity, autoDestructor ) {
 
   this._destoryQueueHead = null;
   this._destoryQueueTail = null;
-  this._popAndDestory = _popAndDestory.bind( this );
-  this._popAndDestoryAsyncAction = _popAndDestoryAsyncAction.bind( this );
+  this._popAndDestory = _popAndDestory.bind(this);
+  this._popAndDestoryAsyncAction = _popAndDestoryAsyncAction.bind(this);
+  this._split = _split.bind(this);
   this.cleanUpTimer = null;
 }
 
-function Node( key, value, prev, next ) {
+function Node(key, value, prev, next) {
   this.key = key;
   this.value = value;
   this.prev = prev;
@@ -105,12 +107,12 @@ LruCache.prototype.clear = function () {
  * @return cache value mapped with this key
  *
  */
-LruCache.prototype.get = function ( key ) {
-  if ( this.has( key ) ) {
-    var node = this._cache[ key ];
+LruCache.prototype.get = function (key) {
+  if (this.has(key)) {
+    var node = this._cache[key];
 
-    this._unlink( node );
-    this._insertHead( node );
+    this._unlink(node);
+    this._insertHead(node);
 
     return node.value;
   }
@@ -123,7 +125,7 @@ LruCache.prototype.get = function ( key ) {
  * @return true or false
  *
  */
-LruCache.prototype.has = function ( key ) {
+LruCache.prototype.has = function (key) {
   return this._cache[key];
 };
 
@@ -133,7 +135,7 @@ LruCache.prototype.has = function ( key ) {
  *
  */
 LruCache.prototype.getKeys = function () {
-  return _.keys( this.cache );
+  return _.keys(this.cache);
 };
 /**
  * Remove value of specified key from the cache
@@ -143,16 +145,16 @@ LruCache.prototype.getKeys = function () {
  * @return value of this key if successfully removed
  *
  */
-LruCache.prototype.remove = function ( key, isSkipChecking ) {
+LruCache.prototype.remove = function (key, isSkipChecking) {
   var node;
   //if ( isSkipChecking || this.has( key ) ) {
-    node = this._cache[ key ];
-    if (!node) return null;
-    this._unlink( node );
-    delete this._cache[ key ];
-    //return node.value;
+  node = this._cache[key];
+  if (!node) return null;
+  this._unlink(node);
+  delete this._cache[key];
+  //return node.value;
   //}
-  this._queueNodeForDestory( node.value );
+  this._queueNodeForDestory(node.value);
   return node.value;
 };
 
@@ -163,25 +165,27 @@ LruCache.prototype.remove = function ( key, isSkipChecking ) {
  * @param {any} value
  *
  */
-LruCache.prototype.set = function ( key, value ) {
-  if ( this._capacity <= 0 ) { return this; }
-  var node = this._cache[ key ];
-  if ( node ) {
-    this._unlink( node );
+LruCache.prototype.set = function (key, value) {
+  if (this._capacity <= 0) {
+    return this;
+  }
+  var node = this._cache[key];
+  if (node) {
+    this._unlink(node);
     node.value = value;
   } else {
-    if ( this._size + 1 > this._capacity ) {
+    if (this._size + 1 > this._capacity) {
       // auto destory mode;
-      this.remove( this._tail.key, true );
+      this.remove(this._tail.key, true);
       // delete this._cache[this._tail.key];
       // this._unlink(this._tail);
     } else {
       this._size++;
     }
-    node = new Node( key, value, null, null );
-    this._cache[ key ] = node;
+    node = new Node(key, value, null, null);
+    this._cache[key] = node;
   }
-  this._insertHead( node );
+  this._insertHead(node);
   return this;
 };
 
@@ -205,11 +209,11 @@ LruCache.prototype.values = function () {
   var nodes = [];
 
   node = this._head;
-  while ( node ) {
-    nodes.push( {
+  while (node) {
+    nodes.push({
       key: node.key,
       value: node.value
-    } );
+    });
     node = node.next;
   }
 
@@ -217,22 +221,22 @@ LruCache.prototype.values = function () {
 };
 
 // call Object destructor, if auto-destructor is set
-LruCache.prototype._doAutoCleanUp = function ( value ) {
-  if ( !this.autoDestructor ) return;
-  if ( !value ) return;
-  if ( !value[ this.autoDestructor ] ) return;
-  if ( "function" !== typeof value[ this.autoDestructor ] ) return;
-  setImmediate( value[ this.autoDestructor ].bind( value ) );
+LruCache.prototype._doAutoCleanUp = function (value) {
+  if (!this.autoDestructor) return;
+  if (!value) return;
+  if (!value[this.autoDestructor]) return;
+  if ("function" !== typeof value[this.autoDestructor]) return;
+  setImmediate(value[this.autoDestructor].bind(value));
 }
 
 // Remove a node from linked list, not removed from cache map
-LruCache.prototype._unlink = function ( node ) {
-  if ( node.prev ) {
+LruCache.prototype._unlink = function (node) {
+  if (node.prev) {
     node.prev.next = node.next;
   } else {
     this._head = node.next;
   }
-  if ( node.next ) {
+  if (node.next) {
     node.next.prev = node.prev;
   } else {
     this._tail = node.prev;
@@ -240,24 +244,24 @@ LruCache.prototype._unlink = function ( node ) {
 };
 
 // Insert a node to the head of linked list
-LruCache.prototype._insertHead = function ( node ) {
+LruCache.prototype._insertHead = function (node) {
   node.prev = null;
   node.next = this._head;
 
-  if ( this._head != null ) {
+  if (this._head != null) {
     this._head.prev = node;
   }
   this._head = node;
 
-  if ( this._tail == null ) {
+  if (this._tail == null) {
     this._tail = node;
   }
 };
 
 LruCache.prototype._queueForDestory = function () {
-  if ( this._size === 0 ) return;
-  if ( this.autoDestructor === undefined ) return;
-  if ( this._destoryQueueHead ) {
+  if (this._size === 0) return;
+  if (this.autoDestructor === undefined) return;
+  if (this._destoryQueueHead) {
     this._destoryQueueTail.next = this._head;
   } else {
     this._destoryQueueHead = this._head;
@@ -266,9 +270,9 @@ LruCache.prototype._queueForDestory = function () {
   this._popAndDestory();
 };
 
-LruCache.prototype._queueNodeForDestory = function ( node ) {
-  if ( this.autoDestructor === undefined ) return;
-  if ( this._destoryQueueTail ) {
+LruCache.prototype._queueNodeForDestory = function (node) {
+  if (this.autoDestructor === undefined) return;
+  if (this._destoryQueueTail) {
     this._destoryQueueTail.next = node;
     this._destoryQueueTail = node;
   } else {
@@ -280,6 +284,6 @@ LruCache.prototype._queueNodeForDestory = function ( node ) {
 };
 
 // Export interfaces
-if ( typeof module != 'undefined' ) {
+if (typeof module != 'undefined') {
   module.exports = LruCache
 }
