@@ -26,8 +26,33 @@ var TIMER_INGORE_RESET_THERSHOLD = CLEANUP_DELAY_MS * TIMER_INGORE_RESET_THERSHO
 var performance = window.performance;
 var _now = (performance && performance.now) ? performance.now.bind(performance) : Date.now;
 
+var _ts = _now();
+var cleanUpTimer = false;
+var callQueue = [];
+
+function _global_PopAndDestory(target) {
+  callQueue.push(target);
+  if (cleanUpTimer) {
+    if (_split() > TIMER_INGORE_RESET_THERSHOLD) return;
+    clearTimeout(cleanUpTimer);
+  }
+  cleanUpTimer = setTimeout(_global_popAndDestoryAsyncAction, CLEANUP_DELAY_MS);
+  _ts = _now();
+}
+
 function _split() {
-  return _now() - this._ts;
+  return _now() - _ts;
+}
+
+function _global_popAndDestoryAsyncAction(){
+  var target = callQueue.pop()
+  var hasMore = target._popAndDestoryAsyncAction();
+  if (hasMore) {
+    callQueue.push(target);
+  }
+  if (!cleanUpTimer && callQueue.length !== 0 ) {
+    setImmediate(_global_popAndDestoryAsyncAction);
+  }
 }
 
 function _popAndDestoryAsyncAction() {
@@ -37,20 +62,11 @@ function _popAndDestoryAsyncAction() {
   this._destoryQueueHead = currNode.next;
   currNode.next = null;
   currNode.prev = null;
-  if (!this.cleanUpTimer) {
-    setImmediate(this._popAndDestoryAsyncAction);
-    this.cleanUpTimer = null;
-  }
-
+  return (this._destoryQueueHead === null);
 }
 
 function _popAndDestory() {
-  if (this.cleanUpTimer) {
-    if (this._split() > TIMER_INGORE_RESET_THERSHOLD) return;
-    clearTimeout(this.cleanUpTimer);
-  }
-  this.cleanUpTimer = setTimeout(this._popAndDestoryAsyncAction, CLEANUP_DELAY_MS);
-  this._ts = _now();
+  _global_PopAndDestory(this)
 }
 
 function LruCache(capacity, autoDestructor) {
